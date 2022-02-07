@@ -222,20 +222,6 @@ void tone(uint8_t _pin, unsigned int frequency, unsigned long duration, unsigned
   
 
 
-void musicTest(){
-  delay(1000);
-  tone(buzzer, 400, 600, 150);
-  tone(buzzer, 400, 600, 150);
-  tone(buzzer, 400, 600, 150);
-
-  tone(buzzer, 320, 400, 80);
-  tone(buzzer, 475, 150, 80);
-  tone(buzzer, 400, 600, 100);
-
-  tone(buzzer, 320, 400, 80);
-  tone(buzzer, 475, 150, 80);
-  tone(buzzer, 400, 600, 100);
-}
 
 
 
@@ -246,7 +232,8 @@ void loop() {
 
   btn.tick();
  
-  
+  Serial.write("Serial between two Wemos established...");
+  Serial.flush();
   
   if(displayType){
     display.clearDisplay();

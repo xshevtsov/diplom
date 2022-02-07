@@ -11,7 +11,7 @@ const char* ssid = "Roman_NET";
 const char* password = "Kirovakan_1";
 
 String myString; // complete message from arduino, which consistors of snesors data
-char rdata; // received charactors
+
 
 
 Adafruit_BMP280 bmp;
@@ -29,7 +29,6 @@ void setup() {
    
    WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
     Serial.print(".");
   }
   Serial.println("");
@@ -58,25 +57,24 @@ void setup() {
 }
 
 void loop() {
-  delay(100);
+  
   display.clearDisplay();
   display.setCursor(0, 10);
   display.println(WiFi.localIP());
 
+  if (Serial.available() > 0 ) 
+    {
+      myString = Serial.readString(); 
+       
+      Serial.print(myString);
+      display.println(myString);
+      
+    }
+
   display.display();
 
   
-  if (Serial.available() > 0 ) 
-    {
-      rdata = Serial.read(); 
-      myString = myString+ rdata; 
-      Serial.print(rdata);
-      if( rdata == '\n')
-      {
-        myString = "";
   
-      }
-    }
 
   
 }
