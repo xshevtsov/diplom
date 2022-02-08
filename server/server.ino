@@ -9,6 +9,8 @@
 #include <Adafruit_SSD1306.h>
 #include "GyverTimer.h"
 #include <Arduino_JSON.h>
+#include <SoftwareSerial.h>
+
 
 #define SCREEN_WIDTH 128 
 #define SCREEN_HEIGHT 64 
@@ -23,14 +25,14 @@ uint32_t connectedNodeId = 0;
 String readings;
 char reportDataForDisplay[128]; 
 
+#define WemosD1mini_TX 12  //Mini is D1
+#define WemosD1mini_RX 13 //Mini is D2
+
 
 
 
 #define buzzer D3
-#define button_pin D6
-
-
-
+#define button_pin D5
 
 
 const char* ssid = "Roman_NET";
@@ -43,6 +45,12 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 Scheduler userScheduler; // to control your personal task
 painlessMesh  mesh;
+
+
+
+SoftwareSerial MySerial(WemosD1mini_RX, WemosD1mini_TX); // RX, TX
+String message = "";
+bool messageReady = true;
 
 
 WiFiServer server(80);
@@ -136,15 +144,10 @@ OneButton btn = OneButton(
 );
 
 
-
-
 void setup() {
   Serial.begin(115200);
-
+  MySerial.begin(9600);
   
-
-  
-
   pinMode(buzzer, OUTPUT);
   digitalWrite(buzzer, LOW);
 
@@ -156,10 +159,7 @@ void setup() {
     Serial.println("Double Pressed!");
   });
 
-  
-  
-  
-
+ 
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
     Serial.println(F("SSD1306 allocation failed"));
     while(1);
@@ -172,13 +172,6 @@ void setup() {
    if(!bmp.begin(BMP280_ADDRESS_ALT) ) { 
     Serial.println("BMP280 SENSOR ERROR"); 
     while(1); 
-  }
-
-
-  
-  if(!bmp.begin(BMP280_ADDRESS_ALT) ) { 
-    Serial.println("BMP280 SENSOR ERROR"); 
-    while(1);
   }
 
 
@@ -222,18 +215,43 @@ void tone(uint8_t _pin, unsigned int frequency, unsigned long duration, unsigned
   
 
 
-
-
-
-
 void loop() {
 
   mesh.update();
 
   btn.tick();
  
-  Serial.write("Serial between two Wemos established...");
-  Serial.flush();
+  while(MySerial.available()) {
+    display.clearDisplay();
+    display.setCursor(0, 10);
+    
+    message = MySerial.readString();
+    Serial.println(message);
+    display.println(message);
+    messageReady = true;
+
+    display.display(); 
+  }
+  if(messageReady) {
+    DynamicJsonDocument doc(1024); 
+    DeserializationError error = deserializeJson(doc,message);
+    if(error) {
+      Serial.print(F("deserializeJson() failed: "));
+      Serial.println(error.c_str());
+      messageReady = false;
+      return;
+    }
+    if(doc["type"] == "request") {
+      doc["type"] = "response";
+      // Get data from analog sensors
+      doc["distance"] = random(1,300);
+      doc["gas"] = random(1,500);
+      serializeJson(doc,MySerial);
+      Serial.println("JSON Serialized MySerial");
+    }
+    messageReady = false;
+  }
+  
   
   if(displayType){
     display.clearDisplay();
@@ -264,7 +282,7 @@ void loop() {
       altitude = bmp.readAltitude(1013.25);
     
     
-          
+   
       display.clearDisplay();
       display.setCursor(0, 10);
       display.print("Node: ");
@@ -275,13 +293,9 @@ void loop() {
       display.println(pressure);
       display.print("Altitude: ");
       display.println(altitude);
-      display.display(); 
-
-
-        
+      display.display();   
     }
 
-   
   }
   
 

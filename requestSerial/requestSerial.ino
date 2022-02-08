@@ -3,29 +3,21 @@
 #include <ArduinoJson.h>
 #include "GyverTimer.h"
 
-#define WemosD1mini_TX 5  //Mini is D1
-#define WemosD1mini_RX 4 //Mini is D2
+#define WemosD1mini_TX 12  //Mini is D1
+#define WemosD1mini_RX 13 //Mini is D2
 
-String message = "Hello From sender";
+String message = "";
+double gas = 0, distance = 0;
 
 SoftwareSerial MySerial(WemosD1mini_RX, WemosD1mini_TX); // RX, TX
 
 GTimer HandleIndexTimer(MS, 1000);
 
 
-
 void setup() {
   Serial.begin(9600);
- 
-  MySerial.begin(9600);           
+  MySerial.begin(115200);           
 
-
-
-
-
-
- 
-  
 }
 
 void loop() {
@@ -33,8 +25,7 @@ void loop() {
   if(HandleIndexTimer.isReady()){
     handleIndex();
   }
- 
- 
+
 }
 
 void handleIndex()
@@ -42,13 +33,13 @@ void handleIndex()
   // Send a JSON-formatted request with key "type" and value "request"
   // then parse the JSON-formatted response with keys "gas" and "distance"
   DynamicJsonDocument doc(1024);
-  double gas = 0, distance = 0;
+ 
   // Sending the request
   doc["type"] = "request";
   serializeJson(doc,MySerial);
   // Reading the response
   boolean messageReady = false;
-  String message = "";
+ 
   while(messageReady == false) { // blocking but that's ok
     if(MySerial.available()) {
       message = MySerial.readString();

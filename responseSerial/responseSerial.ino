@@ -1,10 +1,10 @@
 #include <ArduinoJson.h>
 #include <SoftwareSerial.h>
 
-#define WemosD1mini_TX 5  //Mini is D1
-#define WemosD1mini_RX 4 //Mini is D2
+#define WemosD1mini_TX 12  //Mini is D1
+#define WemosD1mini_RX 13 //Mini is D2
 
-String message = "Hello";
+String message = "";
 
 SoftwareSerial MySerial(WemosD1mini_RX, WemosD1mini_TX); // RX, TX
 
