@@ -6,14 +6,23 @@
 #include <SoftwareSerial.h>
 #include <ArduinoJson.h>
 #include "GyverTimer.h"
+#include <aREST.h>
+#include <aREST_UI.h>
 
-#define WemosD1mini_TX 12  //
-#define WemosD1mini_RX 13 //
-
+#define WemosD1mini_TX 12 
+#define WemosD1mini_RX 13 
 
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+
+WiFiServer server(80);
+aREST_UI rest = aREST_UI();
+float temperature = 0;
+float pressure = 0;
+float altitude = 0; 
+
 
 const char* ssid = "Roman_NET";
 const char* password = "Kirovakan_1";
@@ -23,11 +32,11 @@ String myString; // complete message from arduino, which consistors of snesors d
 Adafruit_BMP280 bmp;
 
 
-
 SoftwareSerial MySerial(WemosD1mini_RX, WemosD1mini_TX); // RX, TX
 String message = "";
-double gas = 0, distance = 0;
+
 GTimer HandleIndexTimer(MS, 1000);
+GTimer ClientAvaible(MS, 50);
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
@@ -40,8 +49,23 @@ void setup() {
     Serial.println(F("SSD1306 allocation failed"));
     for(;;);
   }
+
+  rest.variable("temperature",&temperature);
+  rest.variable("pressure",&pressure);
+  rest.variable("altitude", &altitude);
+
+  rest.set_id("1");
+  rest.set_name("esp8266");
+
+  rest.title("ESP8266 UI");
+  rest.button(4);
+  rest.label("temperature");
+  rest.label("pressure");
+  rest.label("altitude");
+
+
    
-   WiFi.begin(ssid, password);
+  WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
   }
@@ -51,11 +75,10 @@ void setup() {
   Serial.println(WiFi.localIP());
 
 
+  server.begin();
+  Serial.println("Server started");  
 
 
-
-
-  
   
   display.clearDisplay();
 
@@ -100,9 +123,9 @@ void handleIndex()
     Serial.println(error.c_str());
     return;
   }
-  distance = doc["distance"];
-  gas = doc["gas"];
-
+  temperature = doc["temperature"];
+  pressure = doc["pressure"];
+  altitude = doc["altitude"];
   display.display();
 }
 
@@ -114,13 +137,25 @@ void handleIndex()
 void loop() {
   
   
-  
-
-
+ 
   if(HandleIndexTimer.isReady()){
       handleIndex();
     }
 
-  
-  
+  WiFiClient client = server.available();
+  if (!client) {
+      return;
+  }
+  while(!client.available()){
+
+      if(ClientAvaible.isReady()){
+        Serial.println("Waiting for client to be avaible...");
+      }
+     
+  }
+  rest.handle(client);
+
+
+ 
+ 
 }

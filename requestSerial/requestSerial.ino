@@ -16,7 +16,7 @@ GTimer HandleIndexTimer(MS, 1000);
 
 void setup() {
   Serial.begin(9600);
-  MySerial.begin(115200);           
+  MySerial.begin(9600);           
 
 }
 

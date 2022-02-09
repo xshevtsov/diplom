@@ -244,8 +244,9 @@ void loop() {
     if(doc["type"] == "request") {
       doc["type"] = "response";
       // Get data from analog sensors
-      doc["distance"] = random(1,300);
-      doc["gas"] = random(1,500);
+      doc["temperature"] = bmp.readTemperature();
+      doc["pressure"] = bmp.readPressure();
+      doc["altitude"] = bmp.readAltitude(1013.25);
       serializeJson(doc,MySerial);
       Serial.println("JSON Serialized MySerial");
     }
