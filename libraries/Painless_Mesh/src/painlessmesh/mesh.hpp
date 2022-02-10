@@ -261,6 +261,7 @@ class Mesh : public ntp::MeshTime, public plugin::PackageHandler<T> {
    * \endcode
    */
   void onDroppedConnection(droppedConnectionCallback_t onDroppedConnection) {
+  	Log(logger::GENERAL, "onDroppedConnection():\n");
     droppedConnectionCallbacks.push_back(
         [onDroppedConnection](uint32_t nodeId, bool station) {
           if (nodeId != 0) onDroppedConnection(nodeId);

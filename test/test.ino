@@ -8,8 +8,6 @@
 #include "GyverTimer.h"
 #include <aREST.h>
 #include <aREST_UI.h>
-#include <AsyncStream.h>
-
 
 #define WemosD1mini_TX 12 
 #define WemosD1mini_RX 13 
@@ -21,28 +19,24 @@
 
 WiFiServer server(80);
 aREST_UI rest = aREST_UI();
-float temperature;
-float pressure;
-float altitude; 
+float temperature = 0;
+float pressure = 0;
+float altitude = 0; 
+
 
 const char* ssid = "Roman_NET";
 const char* password = "Kirovakan_1";
 
+String myString; // complete message from arduino, which consistors of snesors data
 
 Adafruit_BMP280 bmp;
 
+
 SoftwareSerial MySerial(WemosD1mini_RX, WemosD1mini_TX); // RX, TX
-AsyncStream<1024> serial(&MySerial, '\n');
+String message = "";
 
-
-
-
-
-
-
-GTimer HandleIndexTimer(MS, 3000);
+GTimer HandleIndexTimer(MS, 150);
 GTimer ClientAvaible(MS, 50);
-
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
@@ -85,6 +79,7 @@ void setup() {
   Serial.println("Server started");  
 
 
+  
   display.clearDisplay();
 
   display.setTextSize(1);
@@ -92,27 +87,11 @@ void setup() {
   display.setCursor(0, 10);
   // Display static text
   display.println(WiFi.localIP());
+  Serial.println(WiFi.localIP());
 
   
   
   display.display(); 
-}
-
-
-
-void handleClient(){
-  WiFiClient client = server.available();
-  if (!client) {
-      return;
-  }
-//  while(!client.available()){
-//    delay(1);
-////     if(ClientAvaible.isReady()){
-////        Serial.println("Waiting for client to be avaible...");
-////      }
-//  }
-  rest.handle(client);
-  
 }
 
 void handleIndex()
@@ -122,13 +101,36 @@ void handleIndex()
   // Send a JSON-formatted request with key "type" and value "request"
   // then parse the JSON-formatted response with keys "gas" and "distance"
   DynamicJsonDocument doc(1024);
-  
+ 
   // Sending the request
   doc["type"] = "request";
   serializeJson(doc,MySerial);
-  
+  // Reading the response
+  boolean messageReady = false;
  
+  while(messageReady == false) { // blocking but that's ok
+    if(MySerial.available()) {
+      message = MySerial.readString();
+      Serial.println(message);
+      display.println(message);
+      messageReady = true;
+    }
+  }
+  // Attempt to deserialize the JSON-formatted message
+  DeserializationError error = deserializeJson(doc,message);
+  if(error) {
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.c_str());
+    return;
+  }
+  temperature = doc["temperature"];
+  pressure = doc["pressure"];
+  altitude = doc["altitude"];
+
+  display.display();
 }
+
+
 
 
 
@@ -136,43 +138,31 @@ void handleIndex()
 
 void loop() {
 
-  handleClient();
-
-
- 
   if(HandleIndexTimer.isReady()){
       handleIndex();
     }
 
- 
   
-  if(serial.available()) {
-    
-    String message = serial.buf;
-    Serial.println(message);
-    display.println(message);
-    
-    DynamicJsonDocument doc(1024);
-    DeserializationError error = deserializeJson(doc,message);
-    if(error) {
-      Serial.print(F("deserializeJson() failed: "));
-      Serial.println(error.c_str());
+  temperature+=1;
+  altitude+=1;
+  pressure+=1;
+
+
+  WiFiClient client = server.available();
+  if (!client) {
       return;
-    }
-    temperature = doc["temperature"];
-    pressure = doc["pressure"];
-    altitude = doc["altitude"];
+  }
+  while(!client.available()){
 
-
-    
-    display.display();
-    
+      if(ClientAvaible.isReady()){
+        Serial.println("Waiting for client to be avaible...");
+      }
+     
   }
   
   
-
-  handleClient();
-
+  rest.handle(client);
+  
  
  
 }

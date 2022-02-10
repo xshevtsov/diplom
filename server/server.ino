@@ -9,6 +9,8 @@
 #include "GyverTimer.h"
 #include <Arduino_JSON.h>
 #include <SoftwareSerial.h>
+#include <AsyncStream.h>
+
 
 
 #define SCREEN_WIDTH 128 
@@ -44,8 +46,11 @@ Scheduler userScheduler; // to control your personal task
 painlessMesh  mesh;
 
 SoftwareSerial MySerial(WemosD1mini_RX, WemosD1mini_TX); // RX, TX
-String message = "";
-bool messageReady = true;
+AsyncStream<128> serial(&MySerial, '\n');
+
+
+
+
 
 
 WiFiServer server(80);
@@ -183,9 +188,10 @@ void setup() {
   mesh.onNewConnection(&newConnectionCallback);
   mesh.onChangedConnections(&changedConnectionCallback);
   mesh.onNodeTimeAdjusted(&nodeTimeAdjustedCallback);
-
+  
   userScheduler.addTask( taskSendMessage );
   taskSendMessage.enable();
+
   
   display.display(); 
 
@@ -193,6 +199,7 @@ void setup() {
 
   
 }
+
 
 void tone(uint8_t _pin, unsigned int frequency, unsigned long duration, unsigned long pause) {
 
@@ -211,40 +218,30 @@ void tone(uint8_t _pin, unsigned int frequency, unsigned long duration, unsigned
 
 void loop() {
 
-  
+
 
   
   mesh.update();
 
   btn.tick();
 
-    
-  static byte prevAm = 0;
-  static uint32_t tmr = 0;
-  byte am = MySerial.available();
-  if (am != prevAm) {
-    prevAm = am;
-    tmr = millis();
-  }
-  if ((am && millis() - tmr > 10) || am > 60) {
-    
+
+
+//  String topology = mesh.subConnectionJson();
+//  Serial.println(topology);
+ 
+  if(serial.available()) {
     display.clearDisplay();
     display.setCursor(0, 10);
-    
-    message = MySerial.readString();
+    String message = serial.buf;
     Serial.println(message);
     display.println(message);
-    messageReady = true;
-
-    display.display(); 
-  
-  if(messageReady) {
-    DynamicJsonDocument doc(1024); 
+    
+    DynamicJsonDocument doc(128); 
     DeserializationError error = deserializeJson(doc,message);
     if(error) {
       Serial.print(F("deserializeJson() failed: "));
       Serial.println(error.c_str());
-      messageReady = false;
       return;
     }
     if(doc["type"] == "request") {
@@ -256,23 +253,25 @@ void loop() {
       serializeJson(doc,MySerial);
       Serial.println("JSON Serialized MySerial");
     }
-    messageReady = false;
+   
+    display.display(); 
   }
-  }
+  
+  
   
   if(displayType){
     display.clearDisplay();
     display.setCursor(0, 10);
 
-    display.println(reportDataForDisplay);
+    
     if(mesh.isConnected(connectedNodeId)){
       display.println(connectedNodeId);
-      tone(buzzer, 400, 150, 0);
+//      tone(buzzer, 400, 150, 0);
       display.print(" is currently ONLINE");
     }
     if(!mesh.isConnected(connectedNodeId)){
       display.println(connectedNodeId);
-      tone(buzzer, 400, 500, 0);
+//      tone(buzzer, 400, 500, 0);
       display.print(" is currently OFFLINE");
     }
     display.display(); 
