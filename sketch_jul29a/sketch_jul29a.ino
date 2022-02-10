@@ -35,8 +35,9 @@ Adafruit_BMP280 bmp;
 SoftwareSerial MySerial(WemosD1mini_RX, WemosD1mini_TX); // RX, TX
 String message = "";
 
-GTimer HandleIndexTimer(MS, 1000);
+GTimer HandleIndexTimer(MS, 150);
 GTimer ClientAvaible(MS, 50);
+WiFiClient client;
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
@@ -58,10 +59,10 @@ void setup() {
   rest.set_name("esp8266");
 
   rest.title("ESP8266 UI");
-  rest.button(4);
+ 
   rest.label("temperature");
-  rest.label("pressure");
   rest.label("altitude");
+  rest.label("pressure");
 
 
    
@@ -109,11 +110,13 @@ void handleIndex()
   boolean messageReady = false;
  
   while(messageReady == false) { // blocking but that's ok
+    handleClient();
     if(MySerial.available()) {
       message = MySerial.readString();
       Serial.println(message);
       display.println(message);
       messageReady = true;
+      
     }
   }
   // Attempt to deserialize the JSON-formatted message
@@ -126,35 +129,37 @@ void handleIndex()
   temperature = doc["temperature"];
   pressure = doc["pressure"];
   altitude = doc["altitude"];
+
   display.display();
 }
 
 
-
-
+void handleClient(){
+  client = server.available();
+  if (!client) {
+      return;
+  }
+  while(!client.available()){
+    delay(1);
+     
+  }
+  rest.handle(client);
+  
+}
 
 
 void loop() {
-  
+
+  handleClient();
+
   
  
   if(HandleIndexTimer.isReady()){
       handleIndex();
     }
 
-  WiFiClient client = server.available();
-  if (!client) {
-      return;
-  }
-  while(!client.available()){
-
-      if(ClientAvaible.isReady()){
-        Serial.println("Waiting for client to be avaible...");
-      }
-     
-  }
-  rest.handle(client);
-
+  
+ 
 
  
  

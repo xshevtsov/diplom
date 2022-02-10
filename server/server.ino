@@ -3,7 +3,6 @@
 #include "painlessMesh.h"
 #include <Wire.h>
 #include <OneButton.h>
-
 #include <Adafruit_BMP280.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -15,10 +14,10 @@
 #define SCREEN_WIDTH 128 
 #define SCREEN_HEIGHT 64 
 
-
 #define   MESH_PREFIX     "whateverYouLike"
 #define   MESH_PASSWORD   "somethingSneaky"
 #define   MESH_PORT       5555
+
 uint32_t nodeNumber = 999;
 uint32_t connectedNodeId = 0;
 
@@ -27,8 +26,6 @@ char reportDataForDisplay[128];
 
 #define WemosD1mini_TX 12  //Mini is D1
 #define WemosD1mini_RX 13 //Mini is D2
-
-
 
 
 #define buzzer D3
@@ -45,8 +42,6 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 Scheduler userScheduler; // to control your personal task
 painlessMesh  mesh;
-
-
 
 SoftwareSerial MySerial(WemosD1mini_RX, WemosD1mini_TX); // RX, TX
 String message = "";
@@ -201,7 +196,6 @@ void setup() {
 
 void tone(uint8_t _pin, unsigned int frequency, unsigned long duration, unsigned long pause) {
 
-  
   pinMode (_pin, OUTPUT );
   analogWriteFreq(frequency);
   analogWrite(_pin,255);
@@ -217,11 +211,23 @@ void tone(uint8_t _pin, unsigned int frequency, unsigned long duration, unsigned
 
 void loop() {
 
+  
+
+  
   mesh.update();
 
   btn.tick();
- 
-  while(MySerial.available()) {
+
+    
+  static byte prevAm = 0;
+  static uint32_t tmr = 0;
+  byte am = MySerial.available();
+  if (am != prevAm) {
+    prevAm = am;
+    tmr = millis();
+  }
+  if ((am && millis() - tmr > 10) || am > 60) {
+    
     display.clearDisplay();
     display.setCursor(0, 10);
     
@@ -231,7 +237,7 @@ void loop() {
     messageReady = true;
 
     display.display(); 
-  }
+  
   if(messageReady) {
     DynamicJsonDocument doc(1024); 
     DeserializationError error = deserializeJson(doc,message);
@@ -252,7 +258,7 @@ void loop() {
     }
     messageReady = false;
   }
-  
+  }
   
   if(displayType){
     display.clearDisplay();
@@ -281,8 +287,6 @@ void loop() {
       pressure = bmp.readPressure();
       temperature = bmp.readTemperature();
       altitude = bmp.readAltitude(1013.25);
-    
-    
    
       display.clearDisplay();
       display.setCursor(0, 10);
