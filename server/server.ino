@@ -46,9 +46,10 @@ Scheduler userScheduler; // to control your personal task
 painlessMesh  mesh;
 
 SoftwareSerial MySerial(WemosD1mini_RX, WemosD1mini_TX); // RX, TX
-AsyncStream<128> serial(&MySerial, '\n');
+AsyncStream<1024> serial(&MySerial, '\n');
 
-
+DynamicJsonDocument document(1024); 
+JsonArray NodesArray = document.to<JsonArray>();
 
 
 
@@ -95,19 +96,44 @@ void receivedCallback( uint32_t from, String &msg ) {
   JSONVar myObject = JSON.parse(msg.c_str());
   int node = myObject["node"];
   double temp = myObject["temp"];
-  double hum = myObject["alt"];
+  double alt = myObject["alt"];
   double pres = myObject["pres"];
+
   Serial.print("Node: ");
   Serial.println(node);
   Serial.print("Temperature: ");
   Serial.print(temp);
   Serial.println(" C");
   Serial.print("Alt: ");
-  Serial.print(hum);
+  Serial.print(alt);
   Serial.println(" %");
   Serial.print("Pressure: ");
   Serial.print(pres);
   Serial.println(" hpa");
+
+
+  serializeJson(NodesArray, Serial);
+
+
+  for(int i = 0; i < NodesArray.size(); i++){
+      if(NodesArray[i]["node"].as<int>() == node){
+        NodesArray[i]["temp"] = temp;
+        NodesArray[i]["alt"] = alt;
+        NodesArray[i]["pres"] = pres;
+        return;
+      }
+    
+  }
+  
+  JsonObject nested = NodesArray.createNestedObject();
+  nested["node"] = myObject["node"];
+  nested["temp"] = myObject["temp"];
+  nested["alt"] = myObject["alt"];
+  nested["pres"] = myObject["pres"];
+  
+
+ 
+  
 
   
 
@@ -237,7 +263,7 @@ void loop() {
     Serial.println(message);
     display.println(message);
     
-    DynamicJsonDocument doc(128); 
+    DynamicJsonDocument doc(1024); 
     DeserializationError error = deserializeJson(doc,message);
     if(error) {
       Serial.print(F("deserializeJson() failed: "));
@@ -245,12 +271,14 @@ void loop() {
       return;
     }
     if(doc["type"] == "request") {
-      doc["type"] = "response";
+//      doc["type"] = "response";
+      
+
+      
       // Get data from analog sensors
-      doc["temperature"] = bmp.readTemperature();
-      doc["pressure"] = bmp.readPressure();
-      doc["altitude"] = bmp.readAltitude(1013.25);
-      serializeJson(doc,MySerial);
+//      doc["temperature"] = bmp.readTemperature();
+//      doc["topology"] = mesh.subConnectionJson();
+      serializeJson(NodesArray,MySerial);
       Serial.println("JSON Serialized MySerial");
     }
    

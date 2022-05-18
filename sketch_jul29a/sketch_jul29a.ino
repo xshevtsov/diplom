@@ -25,8 +25,8 @@ float temperature;
 float pressure;
 float altitude; 
 
-const char* ssid = "Roman_NET";
-const char* password = "Kirovakan_1";
+const char* ssid = "Pixel_5986";
+const char* password = "0451qwerty";
 
 
 Adafruit_BMP280 bmp;
@@ -40,7 +40,7 @@ AsyncStream<1024> serial(&MySerial, '\n');
 
 
 
-GTimer HandleIndexTimer(MS, 3000);
+GTimer HandleIndexTimer(MS, 5000);
 GTimer ClientAvaible(MS, 50);
 
 
@@ -105,12 +105,12 @@ void handleClient(){
   if (!client) {
       return;
   }
-//  while(!client.available()){
-//    delay(1);
-////     if(ClientAvaible.isReady()){
-////        Serial.println("Waiting for client to be avaible...");
-////      }
-//  }
+  while(!client.available()){
+    delay(10);
+//     if(ClientAvaible.isReady()){
+//        Serial.println("Waiting for client to be avaible...");
+//      }
+  }
   rest.handle(client);
   
 }
@@ -162,6 +162,7 @@ void loop() {
     temperature = doc["temperature"];
     pressure = doc["pressure"];
     altitude = doc["altitude"];
+    
 
 
     
