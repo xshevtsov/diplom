@@ -159,11 +159,11 @@ void loop() {
       Serial.println(error.c_str());
       return;
     }
-    temperature = doc["temperature"];
-    pressure = doc["pressure"];
-    altitude = doc["altitude"];
+//    temperature = doc["temperature"];
+//    pressure = doc["pressure"];
+//    altitude = doc["altitude"];
     
-
+    serializeJson(doc, Serial);
 
     
     display.display();

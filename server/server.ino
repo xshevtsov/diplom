@@ -132,11 +132,6 @@ void receivedCallback( uint32_t from, String &msg ) {
   nested["pres"] = myObject["pres"];
   
 
- 
-  
-
-  
-
   
 }
 
@@ -202,7 +197,11 @@ void setup() {
 
 
   
+  JsonObject nested = NodesArray.createNestedObject();
+  nested["type"] = "response";
 
+
+  
   display.clearDisplay();
   display.setCursor(0, 10);
 
