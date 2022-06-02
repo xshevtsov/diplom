@@ -1,0 +1,22 @@
+body {
+    background-color: #E6E6FA;
+}
+
+td{
+
+
+    font-size: 1.8vw;
+    /*font-size: 20px;*/
+
+}
+
+.table{
+
+
+}
+
+#chart,#chartAlt,#chartPressure {
+    max-width: 650px;
+    margin: 35px auto;
+
+}
